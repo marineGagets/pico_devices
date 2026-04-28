@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "Mpy Remote Workspace",
+			"uri": "pico:"
+		}
+	],
+	"settings": {
+		"python.languageServer": "Pylance",
+		"python.analysis.extraPaths": [
+			"c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\typings",
+			"c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\micropython"
+		],
+		"python.terminal.activateEnvironment": false
+	}
+}

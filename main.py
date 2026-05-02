@@ -119,6 +119,10 @@ from adc_api2 import SimpleADC
 
 ADC_TYPE = "ads1115"  # "ads1115" or "internal"
 ADC_ASYNC_BACKEND = "thread"  # "thread" or "uasyncio" (ADS1115 continuous mode only)
+ADC_RUN_MODE = "display"  # "display" or "log"
+ADC_LOG_FILE = "/sd/adc_log.csv"
+ADC_LOG_INTERVAL_MS = 100
+ADC_LOG_MAX_SETS = 0  # 0 = unlimited; otherwise stop automatically after N sets
 # Pass the existing SoftI2C object to avoid a conflicting second I2C instance on the same pins.
 adc = SimpleADC(adc_type=ADC_TYPE, i2c=adc_cluster1_i2c, alert_pin=9)
 if ADC_TYPE == "ads1115":
@@ -332,6 +336,54 @@ def run_continuous_ads1115(adc_obj, lcd, refresh_ms=100, display_mode="raw", sta
     raise ValueError("async_backend must be 'thread' or 'uasyncio'")
 
 
+def log_ads1115_to_sd_csv(adc_obj, file_path="/sd/adc_log.csv", interval_ms=100, max_sets=0):
+    from utime import ticks_ms, sleep_ms
+    print("Creating/replacing ADC log file:", file_path)
+    if max_sets < 0:
+        raise ValueError("max_sets must be >= 0")
+    count = 0
+    with open(file_path, "w") as logfile:
+        logfile.write("timestamp_raw,ch0_v,ch1_v,ch2_v,ch3_v\n")
+        if max_sets > 0:
+            print("ADS1115 CSV logging started for {} sets.".format(max_sets))
+        else:
+            print("ADS1115 CSV logging started. Press Ctrl+C to stop.")
+        try:
+            while True:
+                if max_sets > 0 and count >= max_sets:
+                    break
+                timestamp_ms = ticks_ms()
+                raw_values = adc_obj.read_all_channels_raw()
+                r0 = raw_values[0]
+                r1 = raw_values[1]
+                r2 = raw_values[2]
+                r3 = raw_values[3]
+                v0 = adc_obj.raw_to_volts(r0)
+                v1 = adc_obj.raw_to_volts(r1)
+                v2 = adc_obj.raw_to_volts(r2)
+                v3 = adc_obj.raw_to_volts(r3)
+                timestamp_raw = "<{}, [{}, {}, {}, {}]>".format(timestamp_ms, r0, r1, r2, r3)
+                logfile.write("\"{}\",{:.6f},{:.6f},{:.6f},{:.6f}\n".format(
+                    timestamp_raw,
+                    v0,
+                    v1,
+                    v2,
+                    v3,
+                ))
+                count += 1
+                if (count % 10) == 0:
+                    logfile.flush()
+                    print("Logged {} sets".format(count))
+                if interval_ms > 0:
+                    sleep_ms(interval_ms)
+        except KeyboardInterrupt:
+            logfile.flush()
+            print("\nStopped logging. Total sets logged:", count)
+            return
+        logfile.flush()
+        print("Logging completed. Total sets logged:", count)
+
+
 def SysLED_test(Duration=10):
     print("LED starts flashing...")
     while Duration > 0:
@@ -380,8 +432,13 @@ LCD_test()
 if ADC_TYPE == "internal":
     test_internal_adcs(adc)
 else:
-    print("ADS1115 backend:", ADC_ASYNC_BACKEND)
-    run_continuous_ads1115(adc, LCD, refresh_ms=100, display_mode="raw",
-                           stats_period_ms=1000, async_backend=ADC_ASYNC_BACKEND)
+    if ADC_RUN_MODE == "log":
+        log_ads1115_to_sd_csv(adc, file_path=ADC_LOG_FILE,
+                              interval_ms=ADC_LOG_INTERVAL_MS,
+                              max_sets=ADC_LOG_MAX_SETS)
+    else:
+        print("ADS1115 backend:", ADC_ASYNC_BACKEND)
+        run_continuous_ads1115(adc, LCD, refresh_ms=100, display_mode="raw",
+                               stats_period_ms=1000, async_backend=ADC_ASYNC_BACKEND)
 
 print("All tests completed. ADC background status:", adc.get_background_status())

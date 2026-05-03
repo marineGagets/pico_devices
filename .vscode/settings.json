@@ -6,11 +6,22 @@
     },
     "python.terminal.activateEnvironment": false,
     "micropico.openOnStart": true,
+    "micropico.syncFolder": "",
+    "micropico.syncAllFileTypes": true,
+    "micropico.syncFileTypes": [
+        "py",
+        "mpy",
+        "json",
+        "txt",
+        "csv"
+    ],
     "python.analysis.typeshedPaths": [
         "~/.micropico-stubs/included"
     ],
     "python.analysis.extraPaths": [
         "~/.micropico-stubs/included",
+        "lib",
+        "..",
         "c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\typings",
         "c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\micropython"
     ]

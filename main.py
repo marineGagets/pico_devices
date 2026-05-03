@@ -4,7 +4,8 @@ from utime import sleep
 from cpu_temperature import CPU_Temperature 
 from pico_LCD_I2c import I2cLcd
 from piezo_SPKR import PiezoSpeaker
-from ADC_api import ADCCluster
+from pico_api_lib.ADC_api import ADCCluster
+from pico_api_lib.adc_api2 import SimpleADC
 
 
 SysLED = Pin("LED", Pin.OUT) # GPIO25
@@ -37,7 +38,7 @@ SD_SCK_pin = 6
 SD_MOSI_pin = 7
 SD_MISO_pin = 4
 
-import sd_card as sdcard
+from pico_api_lib import sd_card_api as sdcard
 
 """
 import uos
@@ -114,8 +115,6 @@ ADC_cluster1 = ADCCluster(adc_cluster1_i2c, adc_cluster1_address,
 ADC_cluster1.monitor_channel(0)
 ADC_cluster1.monitor_channel(1)
 '''
-
-from adc_api2 import SimpleADC
 
 ADC_TYPE = "ads1115"  # "ads1115" or "internal"
 ADC_ASYNC_BACKEND = "thread"  # "thread" or "uasyncio" (ADS1115 continuous mode only)

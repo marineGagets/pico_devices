@@ -11,6 +11,8 @@
     ],
     "python.analysis.extraPaths": [
         "~/.micropico-stubs/included",
+        "lib",
+        "..",
         "c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\typings",
         "c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\micropython"
     ]

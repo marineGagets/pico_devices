@@ -6,6 +6,15 @@
     },
     "python.terminal.activateEnvironment": false,
     "micropico.openOnStart": true,
+    "micropico.syncFolder": "",
+    "micropico.syncAllFileTypes": true,
+    "micropico.syncFileTypes": [
+        "py",
+        "mpy",
+        "json",
+        "txt",
+        "csv"
+    ],
     "python.analysis.typeshedPaths": [
         "~/.micropico-stubs/included"
     ],

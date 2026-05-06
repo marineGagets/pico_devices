@@ -6,13 +6,6 @@
 		{
 			"name": "Mpy Remote Workspace",
 			"uri": "pico:"
-		},
-		{
-			"path": "../pico_api_lib"
-		},
-		{
-			"name": "pico_api_cppLib",
-			"path": "../pico_api_cppLib"
 		}
 	],
 	"settings": {

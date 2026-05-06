@@ -1,0 +1,14 @@
+build/
+out/
+.cache/
+.vscode/ipch/
+*.uf2
+*.elf
+*.bin
+*.hex
+*.map
+*.dis
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json

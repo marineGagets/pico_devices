@@ -1,0 +1,22 @@
+[
+    {
+        "name": "Pico ARM GCC (pico)",
+        "compilers": {
+            "C":   "arm-none-eabi-gcc",
+            "CXX": "arm-none-eabi-g++"
+        },
+        "cmakeSettings": {
+            "PICO_BOARD": "pico"
+        }
+    },
+    {
+        "name": "Pico ARM GCC (pico_w)",
+        "compilers": {
+            "C":   "arm-none-eabi-gcc",
+            "CXX": "arm-none-eabi-g++"
+        },
+        "cmakeSettings": {
+            "PICO_BOARD": "pico_w"
+        }
+    }
+]

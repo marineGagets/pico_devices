@@ -1,0 +1,25 @@
+{
+    "cmake.configureOnOpen": true,
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.generator": "Ninja",
+    "cmake.configureSettings": {
+        "PICO_BOARD": "pico",
+        "PICO_SDK_FETCH_FROM_GIT": "ON"
+    },
+    "cmake.configureArgs": [],
+    "cmake.environment": {
+        // Set PICO_SDK_PATH here if you have a local SDK clone, e.g.:
+        // "PICO_SDK_PATH": "C:/VSARM/sdk/pico/pico-sdk"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.cStandard": "c11",
+    "files.associations": {
+        "*.h": "c",
+        "*.hpp": "cpp",
+        "*.cpp": "cpp",
+        "*.tpp": "cpp"
+    },
+    "editor.formatOnSave": false
+}

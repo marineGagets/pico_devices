@@ -29,6 +29,7 @@ pico_sdk_init()
 # Per-API subfolders. Add a new line here for each new API.
 # ----------------------------------------------------------------------------
 add_subdirectory(ADC_api)
+add_subdirectory(SDCard_api)
 
 # ----------------------------------------------------------------------------
 # Parent demo executable (main.cpp at project root).
@@ -40,6 +41,7 @@ add_executable(pico_api_demo
 
 target_link_libraries(pico_api_demo PRIVATE
     adc_api
+    sdcard_api
 )
 
 # Pico W: link the CYW43 driver if you need the on-board LED.

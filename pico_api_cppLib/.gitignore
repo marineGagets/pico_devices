@@ -1,6 +1,7 @@
 build/
 out/
 .cache/
+pico-sdk/
 .vscode/ipch/
 *.uf2
 *.elf

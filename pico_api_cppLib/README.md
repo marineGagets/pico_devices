@@ -17,6 +17,11 @@ pico_api_cppLib/
 │   ├── CMakeLists.txt
 │   ├── ADC_api.hpp
 │   └── ADC_api.cpp
+├── SDCard_api/             # SD card block driver over SPI
+│   ├── CMakeLists.txt
+│   ├── SDCard_api.hpp
+│   └── SDCard_api.cpp
+├── pico-sdk/               # vendored Pico SDK (gitignored, see Prerequisites)
 └── .vscode/                # CMake Tools + cortex-debug settings
 ```
 
@@ -38,10 +43,29 @@ Install once on your machine:
 - **Python 3** (used by some SDK build steps)
 - VS Code extensions: *CMake Tools*, *C/C++*, and (optional) *Cortex-Debug*
 
-You also need the Pico SDK. Either:
+You also need the Pico SDK. This repo includes a local shallow clone at
+`pico-sdk/` (excluded from git via `.gitignore`). Pick one of:
 
-1. Set the env var `PICO_SDK_PATH` to a local clone of `pico-sdk`, **or**
-2. Leave `PICO_SDK_FETCH_FROM_GIT=ON` (default in `.vscode/settings.json`) and CMake will fetch it on first configure.
+1. **Use the bundled local clone** (default once present): point CMake at it
+   by setting `PICO_SDK_PATH` to the absolute path of `pico-sdk/` in this
+   repo, e.g. in PowerShell:
+   ```powershell
+   $env:PICO_SDK_PATH = "$PWD\pico-sdk"
+   ```
+   Or set it in `.vscode/settings.json` under `cmake.environment`.
+2. **Use a system-wide SDK clone** by setting `PICO_SDK_PATH` to that path.
+3. **Let CMake fetch it** by setting `PICO_SDK_FETCH_FROM_GIT=ON` (legacy
+   fallback in `pico_sdk_import.cmake`).
+
+> Note: the bundled `pico-sdk/` is a shallow clone **without submodules**.
+> Submodules (`btstack`, `cyw43-driver`, `lwip`, `mbedtls`, `tinyusb`) are
+> only required for Wi-Fi/Bluetooth/USB features. Fetch them on demand:
+> ```powershell
+> cd pico-sdk
+> git submodule update --init --depth 1 lib/tinyusb        # USB stack
+> git submodule update --init --depth 1 lib/cyw43-driver   # Pico W Wi-Fi/BT
+> git submodule update --init --depth 1 lib/lwip           # TCP/IP
+> ```
 
 ## Build
 

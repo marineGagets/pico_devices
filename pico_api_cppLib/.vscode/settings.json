@@ -3,15 +3,27 @@
     "cmake.sourceDirectory": "${workspaceFolder}",
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.generator": "Ninja",
+    "cmake.cmakePath": "C:/Program Files/CMake/bin/cmake.exe",
     "cmake.configureSettings": {
-        "PICO_BOARD": "pico",
-        "PICO_SDK_FETCH_FROM_GIT": "ON"
+        "PICO_BOARD": "pico"
     },
     "cmake.configureArgs": [],
     "cmake.environment": {
-        // Set PICO_SDK_PATH here if you have a local SDK clone, e.g.:
-        // "PICO_SDK_PATH": "C:/VSARM/sdk/pico/pico-sdk"
+        // Local pico-sdk clone (gitignored, see README).
+        "PICO_SDK_PATH": "${workspaceFolder}/pico-sdk",
+        // Prepend toolchains to PATH so CMake/Ninja/ARM gcc and a host gcc
+        // (needed by pico-sdk to build picotool) are all discoverable.
+        "Path": "C:/Program Files/CMake/bin;C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin;C:/Users/larry/AppData/Local/Microsoft/WinGet/Packages/Ninja-build.Ninja_Microsoft.Winget.Source_8wekyb3d8bbwe;C:/Users/larry/AppData/Local/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/mingw64/bin;${env:PATH}"
     },
+    // Same env for the Raspberry Pi Pico extension's "Compile" button.
+    "raspberry-pi-pico.cmakePath": "C:/Program Files/CMake/bin/cmake.exe",
+    "raspberry-pi-pico.ninjaPath": "C:/Users/larry/AppData/Local/Microsoft/WinGet/Packages/Ninja-build.Ninja_Microsoft.Winget.Source_8wekyb3d8bbwe/ninja.exe",
+    "raspberry-pi-pico.gitPath": "git",
+    "raspberry-pi-pico.cmakeAutoConfigure": true,
+    "raspberry-pi-pico.useCmakeTools": true,
+    "raspberry-pi-pico.picoSDK": "2.1.1",
+    "raspberry-pi-pico.picoSDKPath": "${workspaceFolder}/pico-sdk",
+    "raspberry-pi-pico.toolchainPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "C_Cpp.default.cppStandard": "c++17",
     "C_Cpp.default.cStandard": "c11",

@@ -2,7 +2,7 @@
 # Complete project details at https://RandomNerdTutorials.com/raspberry-pi-pico-i2c-lcd-display-micropython/
 
 from machine import Pin, SoftI2C
-from pico_LCD_I2c import I2cLcd
+from pico_api_lib.LCD_api import I2cLcd
 from time import sleep
 
 # Define the LCD I2C address and dimensions

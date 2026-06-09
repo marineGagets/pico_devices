@@ -15,7 +15,9 @@
 		"python.languageServer": "Pylance",
 		"python.analysis.extraPaths": [
 			"c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\typings",
-			"c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\micropython"
+			"c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.1.4\\emulator\\mock\\micropython",
+			"c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.3.40\\emulator\\mock\\typings",
+			"c:\\Users\\larry\\.vscode\\extensions\\benpaddlejones.pico-bridge-2.3.40\\emulator\\mock\\micropython"
 		],
 		"python.terminal.activateEnvironment": false
 	}

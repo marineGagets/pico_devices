@@ -1,0 +1,126 @@
+#include <iostream>
+#include <string>
+#include <cstring>
+#include "pico/stdlib.h"
+#include "pico/cyw43_arch.h"
+#include "lwip/tcp.h"
+
+// Define your local Wi-Fi parameters
+#define WIFI_SSID "Your_WiFi_Name"
+#define WIFI_PASSWORD "Your_WiFi_Password"
+#define SERVER_PORT 80
+
+// Helper function to send standard HTTP responses back to the client
+static err_t send_http_response(struct tcp_pcb *pcb, int status_code, const std::string& content_type, const std::string& body) {
+    std::string status_str = (status_code == 200) ? "200 OK" : "404 Not Found";
+    std::string response = 
+        "HTTP/1.1 " + status_str + "\r\n"
+        "Content-Type: " + content_type + "\r\n"
+        "Content-Length: " + std::to_string(body.length()) + "\r\n"
+        "Connection: close\r\n\r\n" + body;
+
+    // Queue the data for transmission
+    err_t err = tcp_write(pcb, response.c_str(), response.length(), TCP_WRITE_FLAG_COPY);
+    if (err == ERR_OK) {
+        tcp_output(pcb); // Force immediate transmission
+    }
+    return err;
+}
+
+// Callback invoked when a connected client sends raw data (HTTP Request)
+static err_t http_server_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) {
+    if (p == nullptr) {
+        // Client closed the connection gracefully
+        tcp_close(pcb);
+        return ERR_OK;
+    }
+
+    // Extract the raw request payload text into a string buffer
+    std::string request(static_cast<char*>(p->payload), p->len);
+    tcp_recved(pcb, p->len); // Acknowledge bytes processed to lwIP window
+    pbuf_free(p);            // Clear payload memory allocation buffer
+
+    // Basic Routing Logic
+    if (request.find("GET /api/status") != std::string::npos) {
+        bool led_state = cyw43_arch_gpio_get(CYW43_WL_GPIO_LED_PIN);
+        std::string json_payload = "{\"status\":\"online\",\"led_on\":" + std::string(led_state ? "true" : "false") + "}";
+        send_http_response(pcb, 200, "application/json", json_payload);
+    } 
+    else if (request.find("POST /api/led") != std::string::npos) {
+        // Determine intended state by scanning the body/query parameters
+        if (request.find("\"power\":1") != std::string::npos || request.find("led=on") != std::string::npos) {
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+            send_http_response(pcb, 200, "application/json", "{\"message\":\"LED turned ON\"}");
+        } else {
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+            send_http_response(pcb, 200, "application/json", "{\"message\":\"LED turned OFF\"}");
+        }
+    } 
+    else {
+        // Fallback fallback error catch routing block
+        send_http_response(pcb, 404, "application/json", "{\"error\":\"Endpoint not found\"}");
+    }
+
+    // Close down the client socket session safely after sending response
+    tcp_close(pcb);
+    return ERR_OK;
+}
+
+// Callback invoked when a remote client establishes a TCP handshake connection
+static err_t http_server_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
+    if (err != ERR_OK || newpcb == nullptr) {
+        return ERR_VAL;
+    }
+    // Bind the incoming data receiving processor event loop hook
+    tcp_recv(newpcb, http_server_recv);
+    return ERR_OK;
+}
+
+// Initialization routine setting up listener endpoint allocations
+void start_api_server() {
+    struct tcp_pcb *pcb = tcp_new();
+    if (!pcb) {
+        std::cerr << "Failed to allocate standard TCP socket PCB." << std::endl;
+        return;
+    }
+
+    // Bind socket wrapper structure variables directly against all interfaces
+    if (tcp_bind(pcb, IP_ADDR_ANY, SERVER_PORT) != ERR_OK) {
+        std::cerr << "Port assignment conflicts occurred binding port." << std::endl;
+        return;
+    }
+
+    // Transition state properties from baseline allocations over to standard Listening sockets
+    pcb = tcp_listen(pcb);
+    tcp_accept(pcb, http_server_accept);
+    std::cout << "API Server successfully configured. Listening on port " << SERVER_PORT << "..." << std::endl;
+}
+
+int main() {
+    stdio_init_all();
+
+    // Core layer hardware system initialization
+    if (cyw43_arch_init()) {
+        std::cerr << "WiFi hardware chip interface initiation failed." << std::endl;
+        return -1;
+    }
+
+    cyw43_arch_enable_sta_mode();
+    std::cout << "Connecting to Wi-Fi network: " << WIFI_SSID << "..." << std::endl;
+
+    // Block logic process initialization matching local authentication requirements
+    if (cyw43_arch_wifi_connect_blocking(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+        std::cerr << "Authentication parameters rejected by target network." << std::endl;
+        return -1;
+    }
+
+    std::cout << "Connection established successfully!" << std::endl;
+    start_api_server();
+
+    // Continuous execution background worker loop thread container block
+    while (true) {
+        // Keeps network stack operations processing safely in the background
+        cyw43_arch_poll();
+        sleep_ms(1);
+    }
+}

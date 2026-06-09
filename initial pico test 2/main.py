@@ -2,7 +2,7 @@ import machine
 from machine import Pin, SoftI2C
 from utime import sleep
 from cpu_temperature import CPU_Temperature 
-from pico_LCD_I2c import I2cLcd
+from pico_api_lib.LCD_api import I2cLcd
 from piezo_SPKR import PiezoSpeaker
 from pico_api_lib.ADC_api import ADCCluster
 from pico_api_lib.adc_api2 import SimpleADC

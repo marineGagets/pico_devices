@@ -1,0 +1,295 @@
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include "pico/stdlib.h"
+#include "pico/stdio.h"
+#include "pico/stdio/driver.h"
+#include "hardware/spi.h"
+
+// --- ST7735S CONFIGURATIONS ---
+#define SCREEN_WIDTH  160
+#define SCREEN_HEIGHT 128
+#define CHAR_WIDTH    6
+#define CHAR_HEIGHT   8
+#define MAX_COLS      (SCREEN_WIDTH / CHAR_WIDTH)   // 26
+#define MAX_ROWS      (SCREEN_HEIGHT / CHAR_HEIGHT) // 16
+
+// Pinouts matching Waveshare 1.8 Board
+#define PIN_MISO -1
+#define PIN_MOSI 11
+#define PIN_SCLK 10
+#define PIN_CS   9
+#define PIN_DC   8
+#define PIN_RST  12
+#define PIN_BL   13
+
+#define SPI_PORT spi1
+
+// Simple 5x7 Font representation embedded for raw standalone printing
+const uint8_t FONT_DATA[][5] = {
+    {0x00, 0x00, 0x00, 0x00, 0x00}, // Space
+    {0x00, 0x00, 0x4f, 0x00, 0x00}, // !
+    {0x00, 0x07, 0x00, 0x07, 0x00}, // "
+    {0x14, 0x7f, 0x14, 0x7f, 0x14}, // #
+    {0x24, 0x2a, 0x7f, 0x2a, 0x12}, // $
+    {0x23, 0x13, 0x08, 0x64, 0x62}, // %
+    {0x36, 0x49, 0x55, 0x22, 0x50}, // &
+    {0x00, 0x05, 0x03, 0x00, 0x00}, // '
+    {0x00, 0x1c, 0x22, 0x41, 0x00}, // (
+    {0x00, 0x41, 0x22, 0x1c, 0x00}, // )
+    {0x14, 0x08, 0x3e, 0x08, 0x14}, // *
+    {0x08, 0x08, 0x3e, 0x08, 0x08}, // +
+    {0x00, 0x50, 0x30, 0x00, 0x00}, // ,
+    {0x08, 0x08, 0x08, 0x08, 0x08}, // -
+    {0x00, 0x60, 0x60, 0x00, 0x00}, // .
+    {0x20, 0x10, 0x08, 0x04, 0x02}, // /
+    {0x3e, 0x51, 0x49, 0x45, 0x3e}, // 0
+    {0x00, 0x42, 0x7f, 0x40, 0x00}, // 1
+    {0x42, 0x61, 0x51, 0x49, 0x46}, // 2
+    {0x21, 0x41, 0x45, 0x4b, 0x31}, // 3
+    {0x18, 0x14, 0x12, 0x7f, 0x10}, // 4
+    {0x27, 0x45, 0x45, 0x45, 0x39}, // 5
+    {0x3c, 0x4a, 0x49, 0x49, 0x30}, // 6
+    {0x01, 0x71, 0x09, 0x05, 0x03}, // 7
+    {0x36, 0x49, 0x49, 0x49, 0x36}, // 8
+    {0x06, 0x49, 0x49, 0x29, 0x1e}, // 9
+    {0x00, 0x36, 0x36, 0x00, 0x00}, // :
+    {0x00, 0x56, 0x36, 0x00, 0x00}, // ;
+    {0x08, 0x14, 0x22, 0x41, 0x00}, // <
+    {0x14, 0x14, 0x14, 0x14, 0x14}, // =
+    {0x00, 0x41, 0x22, 0x14, 0x08}, // >
+    {0x02, 0x01, 0x51, 0x09, 0x06}, // ?
+    {0x32, 0x49, 0x79, 0x41, 0x3e}, // @
+    {0x7e, 0x11, 0x11, 0x11, 0x7e}, // A
+    {0x7f, 0x49, 0x49, 0x49, 0x36}, // B
+    {0x3e, 0x41, 0x41, 0x41, 0x22}, // C
+    {0x7f, 0x41, 0x41, 0x22, 0x1c}, // D
+    {0x7f, 0x49, 0x49, 0x49, 0x41}, // E
+    {0x7f, 0x09, 0x09, 0x09, 0x01}, // F
+    {0x3e, 0x41, 0x49, 0x49, 0x7a}, // G
+    {0x7f, 0x08, 0x08, 0x08, 0x7f}, // H
+    {0x00, 0x41, 0x7f, 0x41, 0x00}, // I
+    {0x20, 0x40, 0x41, 0x3f, 0x01}, // J
+    {0x7f, 0x08, 0x14, 0x22, 0x41}, // K
+    {0x7f, 0x40, 0x40, 0x40, 0x40}, // L
+    {0x7f, 0x02, 0x0c, 0x02, 0x7f}, // M
+    {0x7f, 0x04, 0x08, 0x10, 0x7f}, // N
+    {0x3e, 0x41, 0x41, 0x41, 0x3e}, // O
+    {0x7f, 0x09, 0x09, 0x09, 0x06}, // P
+    {0x3e, 0x41, 0x51, 0x21, 0x5e}, // Q
+    {0x7f, 0x09, 0x19, 0x29, 0x46}, // R
+    {0x46, 0x49, 0x49, 0x49, 0x31}, // S
+    {0x01, 0x01, 0x7f, 0x01, 0x01}, // T
+    {0x3f, 0x40, 0x40, 0x40, 0x3f}, // U
+    {0x1f, 0x20, 0x40, 0x20, 0x1f}, // V
+    {0x3f, 0x40, 0x38, 0x40, 0x3f}, // W
+    {0x63, 0x14, 0x08, 0x14, 0x63}, // X
+    {0x07, 0x08, 0x70, 0x08, 0x07}, // Y
+    {0x61, 0x51, 0x49, 0x45, 0x43}  // Z
+};
+
+// --- CORE HARDWARE INTERACTION CLASS ---
+class ST7735S_Display {
+private:
+    uint16_t frame_buffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+    int cursor_x = 0, cursor_y = 0;
+    uint16_t text_color = 0xFFFF; // White
+    uint16_t bg_color = 0x0000;   // Black
+
+    void write_cmd(uint8_t cmd) {
+        gpio_put(PIN_DC, 0);
+        gpio_put(PIN_CS, 0);
+        spi_write_blocking(SPI_PORT, &cmd, 1);
+        gpio_put(PIN_CS, 1);
+    }
+
+    void write_data(uint8_t data) {
+        gpio_put(PIN_DC, 1);
+        gpio_put(PIN_CS, 0);
+        spi_write_blocking(SPI_PORT, &data, 1);
+        gpio_put(PIN_CS, 1);
+    }
+
+    void set_address_window(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
+        write_cmd(0x2A); // Column addr set
+        write_data(0x00); write_data(x0 + 2); // Physical offset shift adjustments
+        write_data(0x00); write_data(x1 + 2);
+        write_cmd(0x2B); // Row addr set
+        write_data(0x00); write_data(y0 + 1);
+        write_data(0x00); write_data(y1 + 1);
+        write_cmd(0x2C); // Memory write
+    }
+
+public:
+    void init() {
+        spi_init(SPI_PORT, 20000000); // 20 MHz
+        gpio_set_function(PIN_MOSI, GPIO_FUNC_SPI);
+        gpio_set_function(PIN_SCLK, GPIO_FUNC_SPI);
+
+        gpio_init(PIN_CS);  gpio_set_dir(PIN_CS, GPIO_OUT);
+        gpio_init(PIN_DC);  gpio_set_dir(PIN_DC, GPIO_OUT);
+        gpio_init(PIN_RST); gpio_set_dir(PIN_RST, GPIO_OUT);
+        gpio_init(PIN_BL);  gpio_set_dir(PIN_BL, GPIO_OUT);
+        gpio_put(PIN_BL, 1); // Turn backlight active
+
+        // Hardware Reset
+        gpio_put(PIN_RST, 1); sleep_ms(10);
+        gpio_put(PIN_RST, 0); sleep_ms(10);
+        gpio_put(PIN_RST, 1); sleep_ms(10);
+
+        write_cmd(0x11); // Sleep out
+        sleep_ms(120);
+        write_cmd(0x36); write_data(0xA8); // MX, MY, MV mode (Landscape setup)
+        write_cmd(0x3A); write_data(0x05); // 16-bit pixel depth interface color mode
+        write_cmd(0x29); // Display on
+        
+        clear(0x0000);
+    }
+
+    void clear(uint16_t color) {
+        std::fill_index = 0;
+        for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; ++i) {
+            frame_buffer[i] = color;
+        }
+        render();
+    }
+
+    void render() {
+        set_address_window(0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+        gpio_put(PIN_DC, 1);
+        gpio_put(PIN_CS, 0);
+        spi_write_blocking(SPI_PORT, (uint8_t*)frame_buffer, sizeof(frame_buffer));
+        gpio_put(PIN_CS, 1);
+    }
+
+    void draw_pixel(int x, int y, uint16_t color) {
+        if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+            frame_buffer[y * SCREEN_WIDTH + x] = __builtin_bswap16(color); // Swap endianness for ST7735S SPI
+        }
+    }
+
+    void draw_line(int x0, int y0, int x1, int y1, uint16_t color) {
+        int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        int err = dx + dy, e2;
+        while (true) {
+            draw_pixel(x0, y0, color);
+            if (x0 == x1 && y0 == y1) break;
+            e2 = 2 * err;
+            if (e2 >= dy) { err += dy; x0 += sx; }
+            if (e2 <= dx) { err += dx; y0 += sy; }
+        }
+    }
+
+    void scroll_text_up() {
+        // Move framebuffer contents up by 1 text row height
+        int shift_offset = CHAR_HEIGHT * SCREEN_WIDTH;
+        int total_pixels = SCREEN_WIDTH * SCREEN_HEIGHT;
+        std::copy(frame_buffer + shift_offset, frame_buffer + total_pixels, frame_buffer);
+        
+        // Zero out the newly exposed bottom row canvas
+        uint16_t blank_pixel = __builtin_bswap16(bg_color);
+        std::fill(frame_buffer + (total_pixels - shift_offset), frame_buffer + total_pixels, blank_pixel);
+        cursor_y -= CHAR_HEIGHT;
+    }
+
+    void write_char(char c) {
+        if (c == '\n') {
+            cursor_x = 0;
+            cursor_y += CHAR_HEIGHT;
+            if (cursor_y >= SCREEN_HEIGHT) scroll_text_up();
+            return;
+        }
+        if (c == '\r') {
+            cursor_x = 0;
+            return;
+        }
+        if (c < 32 || c > 90) c = ' '; // Map only supported structures from tracking array symbols
+
+        uint16_t active_idx = c - 32;
+        for (int i = 0; i < 5; i++) {
+            uint8_t line = FONT_DATA[active_idx][i];
+            for (int j = 0; j < 8; j++) {
+                if (line & (1 << j)) {
+                    draw_pixel(cursor_x + i, cursor_y + j, text_color);
+                } else {
+                    draw_pixel(cursor_x + i, cursor_y + j, bg_color);
+                }
+            }
+        }
+        // Blank space separator column
+        for (int j = 0; j < 8; j++) draw_pixel(cursor_x + 5, cursor_y + j, bg_color);
+
+        cursor_x += CHAR_WIDTH;
+        if (cursor_x >= SCREEN_WIDTH) {
+            cursor_x = 0;
+            cursor_y += CHAR_HEIGHT;
+            if (cursor_y >= SCREEN_HEIGHT) scroll_text_up();
+        }
+    }
+};
+
+// Allocate Global hardware Driver instance handler 
+ST7735S_Display display;
+
+// --- STDOUT RE-ROUTING DRIVER SETUP ---
+static void lcd_stdio_write(const char *buf, int len) {
+    for (int i = 0; i < len; i++) {
+        display.write_char(buf[i]);
+    }
+    display.render(); // Flush local framebuffer changes to physical module
+}
+
+// Instantiate target SDK specific tracking wrapper
+static stdio_driver_t lcd_stdio_driver = {
+    .out_chars = lcd_stdio_write,
+    .c_in = nullptr,
+    .next = nullptr,
+    .id = 0x4C4344, // "LCD"
+    .flags = 0
+};
+
+// --- CUSTOM PLOTOUT GRAPHICS DEV CLASS ---
+class PlotoutDevice {
+private:
+    std::string token_buffer;
+public:
+    // Support streaming injection manipulations matching typical ostream interface profiles
+    PlotoutDevice& operator<<(const std::string& input) {
+        token_buffer += input;
+        process_buffer();
+        return *this;
+    }
+
+    PlotoutDevice& operator<<(char input) {
+        token_buffer += input;
+        process_buffer();
+        return *this;
+    }
+
+    void process_buffer() {
+        size_t pos;
+        // Process graphics payloads terminated by a semicolon ';'
+        while ((pos = token_buffer.find(';')) != std::string::npos) {
+            std::string command = token_buffer.substr(0, pos);
+            token_buffer.erase(0, pos + 1);
+            execute_draw(command);
+        }
+    }
+
+    void execute_draw(const std::string& cmd_str) {
+        if (cmd_str.empty()) return;
+        std::stringstream ss(cmd_str);
+        std::string command_type;
+        ss >> command_type;
+
+        if (command_type == "CLEAR") {
+            uint16_t color;
+            ss >> std::hex >> color;
+            display.clear(color);
+        } 
+        else if (command_type == "LINE") {
+            int x0, y0, x1, y1;
+            uint16_t color;
